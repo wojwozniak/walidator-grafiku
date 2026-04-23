@@ -92,7 +92,7 @@
   <h2>Walidator Grafiku</h2>
 
   <div class="controls">
-    <button onclick="document.getElementById('csvInput').click()">Dodaj CSV</button>
+    <button id="uploadBtn" onclick="document.getElementById('csvInput').click()">Dodaj CSV</button>
     <label id="ignoreLabel">
       <input type="checkbox" id="ignoreToggle" onchange="renderViolations()">
       Ignoruj 08:00–10:00
@@ -113,6 +113,7 @@ function handleFile(e) {
   const reader = new FileReader();
   reader.onload = ev => {
     parsedShifts = parseCSV(ev.target.result);
+    document.getElementById('uploadBtn').style.display = 'none';
     document.getElementById('ignoreLabel').style.display = 'flex';
     renderViolations();
   };
