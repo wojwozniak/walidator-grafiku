@@ -95,7 +95,7 @@
     <button id="uploadBtn" onclick="document.getElementById('csvInput').click()">Dodaj CSV</button>
     <label id="ignoreLabel">
       <input type="checkbox" id="ignoreToggle" onchange="renderViolations()">
-      Ignoruj 08:00–10:00
+      Ignoruj 08:00–10:00 i 20:00–22:00
     </label>
     <select id="locationFilter" style="display:none;font-family:inherit;font-size:14px;padding:7px 10px;border:1px solid #ccc;border-radius:4px;background:#fff;" onchange="renderViolations()"></select>
     <span id="stats"></span>
@@ -161,7 +161,7 @@ function findViolations() {
       const restH = (curr.startDt - prev.koniecDt) / 3600000;
       if (restH >= 0 && restH < 11) {
         const mins = curr.startDt.getHours() * 60 + curr.startDt.getMinutes();
-        const isIgnored = ignore && mins >= 480 && mins <= 600;
+        const isIgnored = ignore && ((mins >= 480 && mins <= 600) || (mins >= 1200 && mins <= 1320));
         if (!isIgnored) violations.push({ prev, curr, restH });
       }
     }
