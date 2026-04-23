@@ -97,6 +97,7 @@
       <input type="checkbox" id="ignoreToggle" onchange="renderViolations()">
       Ignoruj 08:00–10:00
     </label>
+    <select id="locationFilter" style="display:none;font-family:inherit;font-size:14px;padding:7px 10px;border:1px solid #ccc;border-radius:4px;background:#fff;" onchange="renderViolations()"></select>
     <span id="stats"></span>
   </div>
 
@@ -115,6 +116,10 @@ function handleFile(e) {
     parsedShifts = parseCSV(ev.target.result);
     document.getElementById('uploadBtn').style.display = 'none';
     document.getElementById('ignoreLabel').style.display = 'flex';
+    const locations = [...new Set(parsedShifts.map(s => s.lokalizacja).filter(Boolean))].sort((a,b) => a.localeCompare(b, 'pl'));
+    const sel = document.getElementById('locationFilter');
+    sel.innerHTML = '<option value="">Wszystkie lokalizacje</option>' + locations.map(l => `<option value="${l}">${l}</option>`).join('');
+    sel.style.display = locations.length ? 'inline-block' : 'none';
     renderViolations();
   };
   reader.readAsText(file, 'UTF-8');
@@ -141,8 +146,10 @@ function parseCSV(text) {
 }
 
 function findViolations() {
+  const locFilter = document.getElementById('locationFilter').value;
+  const shifts = locFilter ? parsedShifts.filter(s => s.lokalizacja === locFilter) : parsedShifts;
   const byEmployee = {};
-  for (const s of parsedShifts) {
+  for (const s of shifts) {
     (byEmployee[s.name] = byEmployee[s.name] || []).push(s);
   }
   const ignore = document.getElementById('ignoreToggle').checked;
@@ -175,7 +182,9 @@ function fmtH(h) {
 function renderViolations() {
   if (!parsedShifts.length) return;
   const violations = findViolations();
-  document.getElementById('stats').textContent = `${parsedShifts.length} zmian | ${violations.length} naruszeń`;
+  const locFilter = document.getElementById('locationFilter').value;
+  const shiftCount = locFilter ? parsedShifts.filter(s => s.lokalizacja === locFilter).length : parsedShifts.length;
+  document.getElementById('stats').textContent = `${shiftCount} zmian | ${violations.length} naruszeń`;
 
   if (!violations.length) {
     document.getElementById('tableContainer').innerHTML = '<p>Brak naruszeń.</p>';
