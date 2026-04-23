@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<title>Walidator Grafiku</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #f5f5f0;
+    padding: 40px 20px;
+    color: #222;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  h2 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+  }
+
+  .controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  button {
+    padding: 8px 18px;
+    font-family: inherit;
+    font-size: 14px;
+    background: #222;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+
+  button:hover { background: #444; }
+
+  label {
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+  }
+
+  #stats { font-size: 14px; color: #666; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+
+  th {
+    background: #222;
+    color: #fff;
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  td {
+    padding: 9px 14px;
+    font-size: 13px;
+    border-bottom: 1px solid #eee;
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #fafafa; }
+
+  .warn { color: orange; font-weight: 600; }
+  .danger { color: #d00; font-weight: 600; }
+
+  #ignoreLabel { display: none; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h2>Walidator Grafiku</h2>
+
+  <div class="controls">
+    <button onclick="document.getElementById('csvInput').click()">Dodaj CSV</button>
+    <label id="ignoreLabel">
+      <input type="checkbox" id="ignoreToggle" onchange="renderViolations()">
+      Ignoruj 08:00–10:00
+    </label>
+    <span id="stats"></span>
+  </div>
+
+  <input type="file" id="csvInput" accept=".csv" style="display:none" onchange="handleFile(event)">
+  <div id="tableContainer"></div>
+</div>
+
+<script>
+let parsedShifts = [];
+
+function handleFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    parsedShifts = parseCSV(ev.target.result);
+    document.getElementById('ignoreLabel').style.display = 'flex';
+    renderViolations();
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n').map(l => l.trim()).filter(Boolean);
+  if (lines.length < 2) return [];
+  const sep = lines[0].includes(';') ? ';' : ',';
+  const headers = lines[0].split(sep).map(h => h.trim().replace(/^"|"$/g, ''));
+  const idx = name => headers.findIndex(h => h.toLowerCase() === name.toLowerCase());
+  const iData = idx('Data'), iPrac = idx('Pracownik'), iStan = idx('Stanowisko');
+  const iLok = idx('Lokalizacja'), iStart = idx('Start'), iKoniec = idx('Koniec');
+
+  return lines.slice(1).map(line => {
+    const c = line.split(sep).map(x => x.trim().replace(/^"|"$/g, ''));
+    const dateStr = c[iData], name = c[iPrac], startStr = c[iStart], koniecStr = c[iKoniec];
+    if (!dateStr || !name || !startStr || !koniecStr) return null;
+    const startDt = new Date(`${dateStr}T${startStr}:00`);
+    let koniecDt = new Date(`${dateStr}T${koniecStr}:00`);
+    if (koniecDt <= startDt) koniecDt = new Date(koniecDt.getTime() + 86400000);
+    return { name, stanowisko: c[iStan] || '', lokalizacja: c[iLok] || '', startDt, koniecDt };
+  }).filter(Boolean);
+}
+
+function findViolations() {
+  const byEmployee = {};
+  for (const s of parsedShifts) {
+    (byEmployee[s.name] = byEmployee[s.name] || []).push(s);
+  }
+  const ignore = document.getElementById('ignoreToggle').checked;
+  const violations = [];
+  for (const [, shifts] of Object.entries(byEmployee)) {
+    shifts.sort((a, b) => a.startDt - b.startDt);
+    for (let i = 1; i < shifts.length; i++) {
+      const prev = shifts[i-1], curr = shifts[i];
+      const restH = (curr.startDt - prev.koniecDt) / 3600000;
+      if (restH >= 0 && restH < 11) {
+        const mins = curr.startDt.getHours() * 60 + curr.startDt.getMinutes();
+        const isIgnored = ignore && mins >= 480 && mins <= 600;
+        if (!isIgnored) violations.push({ prev, curr, restH });
+      }
+    }
+  }
+  return violations.sort((a, b) => a.curr.name.localeCompare(b.curr.name, 'pl') || a.curr.startDt - b.curr.startDt);
+}
+
+function fmt(dt) {
+  return dt.toLocaleDateString('pl-PL', {day:'2-digit',month:'2-digit'}) + ' ' +
+    dt.toLocaleTimeString('pl-PL', {hour:'2-digit',minute:'2-digit',hour12:false});
+}
+
+function fmtH(h) {
+  const hrs = Math.floor(h), mins = Math.round((h - hrs) * 60);
+  return mins > 0 ? `${hrs}h ${mins}m` : `${hrs}h`;
+}
+
+function renderViolations() {
+  if (!parsedShifts.length) return;
+  const violations = findViolations();
+  document.getElementById('stats').textContent = `${parsedShifts.length} zmian | ${violations.length} naruszeń`;
+
+  if (!violations.length) {
+    document.getElementById('tableContainer').innerHTML = '<p>Brak naruszeń.</p>';
+    return;
+  }
+
+  let html = '<table><thead><tr><th>Pracownik</th><th>Poprz. koniec</th><th>Nast. start</th><th>Przerwa</th></tr></thead><tbody>';
+  for (const v of violations) {
+    const gapCls = v.restH < 8 ? 'danger' : 'warn';
+    html += `<tr>
+      <td>${v.curr.name}</td>
+      <td>${fmt(v.prev.koniecDt)}</td>
+      <td>${fmt(v.curr.startDt)}</td>
+      <td class="${gapCls}">${fmtH(v.restH)}</td>
+    </tr>`;
+  }
+  html += '</tbody></table>';
+  document.getElementById('tableContainer').innerHTML = html;
+}
+</script>
+</body>
+</html>
