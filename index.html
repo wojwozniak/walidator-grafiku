@@ -201,7 +201,7 @@
   <div class="controls" id="controls">
     <button class="btn" id="uploadBtn" onclick="document.getElementById('csvInput').click()">Wczytaj CSV</button>
     <label class="toggle-label" id="ignoreLabel">
-      <input type="checkbox" id="ignoreToggle" onchange="applyFiltersAndRender()">
+      <input type="checkbox" id="ignoreToggle" onchange="applyFiltersAndRender()" checked>
       Ignoruj 08–10 i 20–22
     </label>
     <select id="locationFilter" onchange="applyFiltersAndRender()"></select>
