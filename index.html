@@ -3,124 +3,243 @@
 <head>
 <meta charset="UTF-8">
 <title>Walidator Grafiku</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f2f0eb;
+    --surface: #fff;
+    --border: #d8d4cc;
+    --text: #1a1a18;
+    --muted: #7a776e;
+    --accent: #1a1a18;
+    --warn: #b85c00;
+    --danger: #c0001a;
+    --tag-bg: #e8e4dc;
+  }
+
   body {
-    font-family: 'Inter', sans-serif;
-    background: #f5f5f0;
-    padding: 40px 20px;
-    color: #222;
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 48px 24px;
+    min-height: 100vh;
   }
 
-  .container {
-    max-width: 960px;
-    margin: 0 auto;
+  .container { max-width: 1000px; margin: 0 auto; }
+
+  header {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 36px;
+    border-bottom: 2px solid var(--text);
+    padding-bottom: 16px;
   }
 
-  h2 {
-    font-size: 1.3rem;
+  header h1 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 1.1rem;
     font-weight: 600;
-    margin-bottom: 20px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  header .subtitle {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
   }
 
   .controls {
     display: flex;
-    gap: 12px;
+    gap: 10px;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 24px;
     flex-wrap: wrap;
   }
 
-  button {
-    padding: 8px 18px;
-    font-family: inherit;
-    font-size: 14px;
-    background: #222;
+  .btn {
+    padding: 8px 16px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    background: var(--accent);
     color: #fff;
-    border: none;
+    border: 2px solid var(--accent);
     cursor: pointer;
-    border-radius: 4px;
+    border-radius: 0;
+    transition: background 0.15s, color 0.15s;
   }
+  .btn:hover { background: #444; border-color: #444; }
 
-  button:hover { background: #444; }
-
-  label {
-    font-size: 14px;
-    display: flex;
+  .toggle-label {
+    display: none;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
+    font-size: 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    cursor: pointer;
+    padding: 8px 12px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    user-select: none;
+    transition: border-color 0.15s;
+  }
+  .toggle-label:hover { border-color: var(--text); }
+  .toggle-label input { accent-color: var(--text); }
+
+  select {
+    display: none;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    padding: 8px 10px;
+    border: 1.5px solid var(--border);
+    border-radius: 0;
+    background: var(--surface);
+    color: var(--text);
     cursor: pointer;
   }
+  select:hover { border-color: var(--text); }
 
-  #stats { font-size: 14px; color: #666; }
+  .stats {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-left: auto;
+  }
+
+  .empty {
+    padding: 40px;
+    text-align: center;
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    border: 1.5px dashed var(--border);
+    background: var(--surface);
+  }
 
   table {
     width: 100%;
     border-collapse: collapse;
-    background: #fff;
-    border-radius: 6px;
-    overflow: hidden;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    background: var(--surface);
+    border: 1.5px solid var(--border);
   }
 
+  thead tr { border-bottom: 2px solid var(--text); }
+
   th {
-    background: #222;
-    color: #fff;
     padding: 10px 14px;
     text-align: left;
-    font-size: 13px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
     font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: var(--tag-bg);
   }
 
   td {
     padding: 9px 14px;
     font-size: 13px;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
   }
 
   tr:last-child td { border-bottom: none; }
-  tr:hover td { background: #fafafa; }
+  tr:hover td { background: #faf8f4; }
 
-  .warn { color: orange; font-weight: 600; }
-  .danger { color: #d00; font-weight: 600; }
+  .name { font-weight: 600; }
 
-  #ignoreLabel { display: none; }
+  .time {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .gap {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .gap.warn { color: var(--warn); }
+  .gap.danger { color: var(--danger); }
+
+  .loc-tag {
+    font-size: 11px;
+    font-family: 'IBM Plex Mono', monospace;
+    background: var(--tag-bg);
+    padding: 2px 7px;
+    border-radius: 2px;
+    color: var(--muted);
+  }
+
+  .upload-zone {
+    border: 2px dashed var(--border);
+    background: var(--surface);
+    padding: 60px 40px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .upload-zone:hover { border-color: var(--text); background: #f9f7f3; }
+  .upload-zone p { font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--muted); margin-top: 8px; }
+  .upload-zone .icon { font-size: 32px; margin-bottom: 8px; }
 </style>
 </head>
 <body>
 <div class="container">
-  <h2>Walidator Grafiku</h2>
+  <header>
+    <h1>Walidator Grafiku</h1>
+    <span class="subtitle">min. odpoczynek 11h</span>
+  </header>
 
-  <div class="controls">
-    <button id="uploadBtn" onclick="document.getElementById('csvInput').click()">Dodaj CSV</button>
-    <label id="ignoreLabel">
-      <input type="checkbox" id="ignoreToggle" onchange="renderViolations()">
-      Ignoruj 08:00–10:00 i 20:00–22:00
+  <div class="controls" id="controls">
+    <button class="btn" id="uploadBtn" onclick="document.getElementById('csvInput').click()">Wczytaj CSV</button>
+    <label class="toggle-label" id="ignoreLabel">
+      <input type="checkbox" id="ignoreToggle" onchange="applyFiltersAndRender()">
+      Ignoruj 08–10 i 20–22
     </label>
-    <select id="locationFilter" style="display:none;font-family:inherit;font-size:14px;padding:7px 10px;border:1px solid #ccc;border-radius:4px;background:#fff;" onchange="renderViolations()"></select>
-    <span id="stats"></span>
+    <select id="locationFilter" onchange="applyFiltersAndRender()"></select>
+    <span class="stats" id="stats"></span>
   </div>
 
   <input type="file" id="csvInput" accept=".csv" style="display:none" onchange="handleFile(event)">
-  <div id="tableContainer"></div>
+
+  <div id="tableContainer">
+    <div class="upload-zone" onclick="document.getElementById('csvInput').click()">
+      <div class="icon">📋</div>
+      <strong>Kliknij lub przeciągnij plik CSV</strong>
+      <p>Wymagane kolumny: Data, Pracownik, Lokalizacja, Start, Koniec</p>
+    </div>
+  </div>
 </div>
 
 <script>
-let parsedShifts = [];
+// allShifts: wszystkie wczytane zmiany z CSV (surowe)
+let allShifts = [];
+// filteredShifts: po zastosowaniu filtrów (lokalizacja, ignorowanie godzin)
+let filteredShifts = [];
 
 function handleFile(e) {
   const file = e.target.files[0];
   if (!file) return;
   const reader = new FileReader();
   reader.onload = ev => {
-    parsedShifts = parseCSV(ev.target.result);
-    document.getElementById('uploadBtn').style.display = 'none';
-    document.getElementById('ignoreLabel').style.display = 'flex';
-    const locations = [...new Set(parsedShifts.map(s => s.lokalizacja).filter(Boolean))].sort((a,b) => a.localeCompare(b, 'pl'));
+    allShifts = parseCSV(ev.target.result);
+    document.getElementById('uploadBtn').textContent = file.name.replace('.csv','') + ' ↺';
+
+    const locations = [...new Set(allShifts.map(s => s.lokalizacja).filter(Boolean))].sort((a,b) => a.localeCompare(b,'pl'));
     const sel = document.getElementById('locationFilter');
     sel.innerHTML = '<option value="">Wszystkie lokalizacje</option>' + locations.map(l => `<option value="${l}">${l}</option>`).join('');
-    sel.style.display = locations.length ? 'inline-block' : 'none';
-    renderViolations();
+    sel.style.display = locations.length > 1 ? 'inline-block' : 'none';
+
+    document.getElementById('ignoreLabel').style.display = 'flex';
+    applyFiltersAndRender();
   };
   reader.readAsText(file, 'UTF-8');
 }
@@ -131,7 +250,7 @@ function parseCSV(text) {
   const sep = lines[0].includes(';') ? ';' : ',';
   const headers = lines[0].split(sep).map(h => h.trim().replace(/^"|"$/g, ''));
   const idx = name => headers.findIndex(h => h.toLowerCase() === name.toLowerCase());
-  const iData = idx('Data'), iPrac = idx('Pracownik'), iStan = idx('Stanowisko');
+  const iData = idx('Data'), iPrac = idx('Pracownik');
   const iLok = idx('Lokalizacja'), iStart = idx('Start'), iKoniec = idx('Koniec');
 
   return lines.slice(1).map(line => {
@@ -141,37 +260,54 @@ function parseCSV(text) {
     const startDt = new Date(`${dateStr}T${startStr}:00`);
     let koniecDt = new Date(`${dateStr}T${koniecStr}:00`);
     if (koniecDt <= startDt) koniecDt = new Date(koniecDt.getTime() + 86400000);
-    return { name, stanowisko: c[iStan] || '', lokalizacja: c[iLok] || '', startDt, koniecDt };
+    return { name, lokalizacja: c[iLok] || '', startDt, koniecDt };
   }).filter(Boolean);
 }
 
-function findViolations() {
+function applyFiltersAndRender() {
   const locFilter = document.getElementById('locationFilter').value;
-  const shifts = locFilter ? parsedShifts.filter(s => s.lokalizacja === locFilter) : parsedShifts;
+  const ignore = document.getElementById('ignoreToggle').checked;
+
+  // filteredShifts: drop wiersze z filtrowanych lokalizacji i ignorowanych zakresów godzin startu
+  filteredShifts = allShifts.filter(s => {
+    if (locFilter && s.lokalizacja !== locFilter) return false;
+    if (ignore) {
+      const sh = s.startDt.getHours(), sm = s.startDt.getMinutes();
+      const eh = s.koniecDt.getHours(), em = s.koniecDt.getMinutes();
+      if (sh === 8 && sm === 0 && eh === 10 && em === 0) return false;  // dokładnie 08:00–10:00
+      if (sh === 20 && sm === 0 && eh === 22 && em === 0) return false; // dokładnie 20:00–22:00
+    }
+    return true;
+  });
+
+  renderViolations();
+}
+
+function findViolations() {
   const byEmployee = {};
-  for (const s of shifts) {
+  for (const s of filteredShifts) {
     (byEmployee[s.name] = byEmployee[s.name] || []).push(s);
   }
-  const ignore = document.getElementById('ignoreToggle').checked;
+
   const violations = [];
-  for (const [, shifts] of Object.entries(byEmployee)) {
+  for (const shifts of Object.values(byEmployee)) {
     shifts.sort((a, b) => a.startDt - b.startDt);
     for (let i = 1; i < shifts.length; i++) {
       const prev = shifts[i-1], curr = shifts[i];
       const restH = (curr.startDt - prev.koniecDt) / 3600000;
-      if (restH >= 0 && restH < 11) {
-        const mins = curr.startDt.getHours() * 60 + curr.startDt.getMinutes();
-        const isIgnored = ignore && ((mins >= 480 && mins <= 600) || (mins >= 1200 && mins <= 1320));
-        if (!isIgnored) violations.push({ prev, curr, restH });
+      // Pomiń: natychmiastowe następstwo (restH === 0) i brak naruszenia (>= 11h)
+      if (restH > 0 && restH < 11) {
+        violations.push({ prev, curr, restH });
       }
     }
   }
-  return violations.sort((a, b) => a.curr.name.localeCompare(b.curr.name, 'pl') || a.curr.startDt - b.curr.startDt);
+  return violations.sort((a, b) => a.prev.koniecDt - b.prev.koniecDt);
 }
 
 function fmt(dt) {
-  return dt.toLocaleDateString('pl-PL', {day:'2-digit',month:'2-digit'}) + ' ' +
-    dt.toLocaleTimeString('pl-PL', {hour:'2-digit',minute:'2-digit',hour12:false});
+  const d = dt.toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit' });
+  const t = dt.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit', hour12: false });
+  return `${d} ${t}`;
 }
 
 function fmtH(h) {
@@ -180,25 +316,33 @@ function fmtH(h) {
 }
 
 function renderViolations() {
-  if (!parsedShifts.length) return;
+  if (!allShifts.length) return;
   const violations = findViolations();
-  const locFilter = document.getElementById('locationFilter').value;
-  const shiftCount = locFilter ? parsedShifts.filter(s => s.lokalizacja === locFilter).length : parsedShifts.length;
-  document.getElementById('stats').textContent = `${shiftCount} zmian | ${violations.length} naruszeń`;
+  document.getElementById('stats').textContent =
+    `${allShifts.length} zmian wczytanych · ${filteredShifts.length} po filtrach · ${violations.length} naruszeń`;
 
   if (!violations.length) {
-    document.getElementById('tableContainer').innerHTML = '<p>Brak naruszeń.</p>';
+    document.getElementById('tableContainer').innerHTML = '<div class="empty">✓ Brak naruszeń w przefiltrowanych danych</div>';
     return;
   }
 
-  let html = '<table><thead><tr><th>Pracownik</th><th>Poprz. koniec</th><th>Nast. start</th><th>Przerwa</th></tr></thead><tbody>';
+  let html = `<table>
+    <thead><tr>
+      <th>Pracownik</th>
+      <th>Lokalizacja</th>
+      <th>Poprz. koniec</th>
+      <th>Nast. start</th>
+      <th>Przerwa</th>
+    </tr></thead><tbody>`;
+
   for (const v of violations) {
     const gapCls = v.restH < 8 ? 'danger' : 'warn';
     html += `<tr>
-      <td>${v.curr.name}</td>
-      <td>${fmt(v.prev.koniecDt)}</td>
-      <td>${fmt(v.curr.startDt)}</td>
-      <td class="${gapCls}">${fmtH(v.restH)}</td>
+      <td class="name">${v.curr.name}</td>
+      <td>${v.curr.lokalizacja ? `<span class="loc-tag">${v.curr.lokalizacja}</span>` : '—'}</td>
+      <td class="time">${fmt(v.prev.koniecDt)}</td>
+      <td class="time">${fmt(v.curr.startDt)}</td>
+      <td class="gap ${gapCls}">${fmtH(v.restH)}</td>
     </tr>`;
   }
   html += '</tbody></table>';
