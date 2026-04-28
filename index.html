@@ -178,6 +178,12 @@
     color: var(--muted);
   }
 
+  .loc-tag.other-loc {
+    background: #fff3e0;
+    color: #b85c00;
+    margin-left: 6px;
+  }
+
   .upload-zone {
     border: 2px dashed var(--border);
     background: var(--surface);
@@ -263,30 +269,39 @@ function parseCSV(text) {
   }).filter(Boolean);
 }
 
+function isManagerial(s) {
+  const sh = s.startDt.getHours(), sm = s.startDt.getMinutes();
+  const eh = s.koniecDt.getHours(), em = s.koniecDt.getMinutes();
+  return (sh === 8 && sm === 0 && eh === 10 && em === 0) ||
+         (sh === 20 && sm === 0 && eh === 22 && em === 0);
+}
+
 function applyFiltersAndRender() {
   const locFilter = document.getElementById('locationFilter').value;
   const ignore = document.getElementById('ignoreToggle').checked;
 
-  // filteredShifts: drop wiersze z filtrowanych lokalizacji i ignorowanych zakresów godzin startu
-  filteredShifts = allShifts.filter(s => {
-    if (locFilter && s.lokalizacja !== locFilter) return false;
-    if (ignore) {
-      const sh = s.startDt.getHours(), sm = s.startDt.getMinutes();
-      const eh = s.koniecDt.getHours(), em = s.koniecDt.getMinutes();
-      if (sh === 8 && sm === 0 && eh === 10 && em === 0) return false;  // dokładnie 08:00–10:00
-      if (sh === 20 && sm === 0 && eh === 22 && em === 0) return false; // dokładnie 20:00–22:00
-    }
-    return true;
-  });
+  // filteredShifts: wszystkie lokalizacje, tylko bez menadżerskich (jeśli toggle)
+  // używane do wykrywania naruszeń — uwzględnia zmiany z innych lokali
+  filteredShifts = allShifts.filter(s => !(ignore && isManagerial(s)));
 
-  renderViolations();
+  // displayShifts: jak filteredShifts, ale dodatkowo ograniczone do wybranej lokalizacji
+  // używane tylko do decyzji które naruszenia POKAZAĆ w tabeli
+  const displayShifts = locFilter
+    ? filteredShifts.filter(s => s.lokalizacja === locFilter)
+    : filteredShifts;
+
+  renderViolations(locFilter, displayShifts);
 }
 
-function findViolations() {
+function findViolations(displayShifts) {
+  // Budujemy mapę per pracownik ze wszystkich filteredShifts (wszystkie lokale)
   const byEmployee = {};
   for (const s of filteredShifts) {
     (byEmployee[s.name] = byEmployee[s.name] || []).push(s);
   }
+
+  // Zbiór zmian które są w displayShifts — do filtrowania co pokazujemy
+  const displaySet = new Set(displayShifts);
 
   const violations = [];
   for (const shifts of Object.values(byEmployee)) {
@@ -294,9 +309,11 @@ function findViolations() {
     for (let i = 1; i < shifts.length; i++) {
       const prev = shifts[i-1], curr = shifts[i];
       const restH = (curr.startDt - prev.koniecDt) / 3600000;
-      // Pomiń: natychmiastowe następstwo (restH === 0) i brak naruszenia (>= 11h)
       if (restH > 0 && restH < 11) {
-        violations.push({ prev, curr, restH });
+        // Pokazuj tylko jeśli zmiana "curr" należy do displayShifts
+        if (displaySet.has(curr)) {
+          violations.push({ prev, curr, restH });
+        }
       }
     }
   }
@@ -314,9 +331,10 @@ function fmtH(h) {
   return mins > 0 ? `${hrs}h ${mins}m` : `${hrs}h`;
 }
 
-function renderViolations() {
+function renderViolations(locFilter, displayShifts) {
   if (!allShifts.length) return;
-  const violations = findViolations();
+  const violations = findViolations(displayShifts);
+  const displayCount = displayShifts ? displayShifts.length : filteredShifts.length;
   document.getElementById('stats').textContent =
     `${allShifts.length} zmian wczytanych · ${filteredShifts.length} po filtrach · ${violations.length} naruszeń`;
 
@@ -336,10 +354,12 @@ function renderViolations() {
 
   for (const v of violations) {
     const gapCls = v.restH < 8 ? 'danger' : 'warn';
+    const prevLokDiff = locFilter && v.prev.lokalizacja && v.prev.lokalizacja !== locFilter;
+    const prevLokTag = prevLokDiff ? ` <span class="loc-tag other-loc">${v.prev.lokalizacja}</span>` : '';
     html += `<tr>
       <td class="name">${v.curr.name}</td>
       <td>${v.curr.lokalizacja ? `<span class="loc-tag">${v.curr.lokalizacja}</span>` : '—'}</td>
-      <td class="time">${fmt(v.prev.koniecDt)}</td>
+      <td class="time">${fmt(v.prev.koniecDt)}${prevLokTag}</td>
       <td class="time">${fmt(v.curr.startDt)}</td>
       <td class="gap ${gapCls}">${fmtH(v.restH)}</td>
     </tr>`;
